@@ -74,7 +74,7 @@ Antes de comenzar, asegúrate de tener instalado:
 
 ### Clonar el repositorio
 ```bash
-git clone <repository-url>
+git clone https://github.com/EstebanRuiz15/taller-nequi.git
 cd taller-nequi
 ```
 
