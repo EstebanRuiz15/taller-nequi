@@ -350,10 +350,4 @@ Deberías ver containers con nombres que contengan `postgres`, `redis`, y `local
 
 ---
 
-## �📚 Recursos Adicionales
-
-- **Logs de la aplicación**: Visibles en la consola donde ejecutas `./gradlew bootRun`
-- **Health Check**: `http://localhost:8080/actuator/health`
-- **Métricas**: `http://localhost:8080/actuator/prometheus`
-
 
