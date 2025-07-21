@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: taller-nequi-postgres
+    environment:
+      POSTGRES_DB: tallerdb
+      POSTGRES_USER: nequi_user
+      POSTGRES_PASSWORD: nequi_password
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - taller-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nequi_user -d tallerdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis para cache 
+  redis:
+    image: redis:7-alpine
+    container_name: taller-nequi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - taller-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # LocalStack para SQS y DynamoDB
+  localstack:
+    image: localstack/localstack:latest
+    container_name: taller-nequi-localstack
+    environment:
+      SERVICES: sqs,dynamodb
+      DEBUG: 1
+      LOCALSTACK_HOST: localhost
+      HOSTNAME_EXTERNAL: localhost
+    ports:
+      - "4566:4566"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+      - taller-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  taller-network:
+    driver: bridge

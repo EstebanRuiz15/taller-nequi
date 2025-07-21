@@ -1,0 +1,53 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: "taller-nequi"
+  devtools:
+    add-properties: false
+  h2:
+    console:
+      enabled: true
+      path: "/h2"
+  profiles:
+    active: "local"
+  redis:
+    host: "localhost"
+    port: 6379
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus"
+  endpoint:
+    health:
+      probes:
+        enabled: true
+cors:
+  allowed-origins: "http://localhost:4200,http://localhost:8080"
+postgresql:
+  host: "${DB_HOST:localhost}"
+  port: "${DB_PORT:5432}"
+  database: "${DB_NAME:tallerdb}"
+  username: "${DB_USER:nequi_user}"
+  password: "${DB_PASS:nequi_password}"
+  schema: "${DB_SCHEMA:public}"
+aws:
+  region: "us-east-1"
+  dynamodb:
+    endpoint: "http://localhost:4566"
+    threads: "10"
+adapter:
+  sqs:
+    region: "us-east-1"
+    queueUrl: "http://localhost:4566/000000000000/tallerNequiQueue"
+    endpoint: "http://localhost:4566"
+entrypoint:
+  sqs:
+    region: "us-east-1"
+    endpoint: "http://localhost:4566"
+    queueUrl: "http://localhost:4566/000000000000/tallerNequiQueue"
+    waitTimeSeconds: 20
+    maxNumberOfMessages: 10
+    visibilityTimeout: 10000
+    numberOfThreads: 1

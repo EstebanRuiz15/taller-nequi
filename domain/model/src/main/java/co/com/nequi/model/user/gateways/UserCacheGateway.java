@@ -1,0 +1,21 @@
+package co.com.nequi.model.user.gateways;
+
+import co.com.nequi.model.user.User;
+import reactor.core.publisher.Mono;
+
+import java.util.List;
+
+public interface UserCacheGateway {
+    
+    Mono<User> getUserFromCache(Integer id);
+    
+    Mono<User> saveUserToCache(Integer id, User user);
+    
+    Mono<User> saveUserToCache(Integer id, User user, long expirationMillis);
+    
+    Mono<List<User>> getUsersByNameFromCache(String name);
+    
+    Mono<List<User>> saveUsersByNameToCache(String name, List<User> users);
+    
+    Mono<List<User>> saveUsersByNameToCache(String name, List<User> users, long expirationMillis);
+}

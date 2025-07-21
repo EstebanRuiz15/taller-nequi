@@ -1,0 +1,38 @@
+server:
+  port: 8080
+  
+spring:
+  r2dbc:
+    url: r2dbc:h2:mem:///testdb
+    username: sa
+    password: 
+  autoconfigure:
+    exclude:
+      - org.springframework.cloud.aws.autoconfigure.context.ContextAutoConfiguration
+      - org.springframework.cloud.aws.autoconfigure.context.ContextStackAutoConfiguration
+      - org.springframework.cloud.aws.autoconfigure.context.ContextInstanceDataAutoConfiguration
+      - org.springframework.cloud.aws.autoconfigure.context.ContextRegionProviderAutoConfiguration
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+  application:
+    name: taller-nequi
+
+logging:
+  level:
+    co.com.nequi: DEBUG
+    reactor.netty: WARN
+    
+external:
+  api:
+    url: https://jsonplaceholder.typicode.com
+    
+aws:
+  region: us-east-1
+  endpoint-url: http://localhost:4566
+  sqs:
+    queue-url: http://localhost:4566/000000000000/tallerNequiQueue
+  dynamodb:
+    table-name: tallerNequiUsers

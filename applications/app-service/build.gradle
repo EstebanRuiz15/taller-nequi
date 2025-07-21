@@ -1,0 +1,37 @@
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+	implementation project( ':redis')
+	implementation project( ':sqs-listener')
+	implementation project( ':sqs-sender')
+	implementation project( ':dynamo-db')
+	implementation project( ':metrics')
+	implementation 'software.amazon.awssdk:sts'
+	implementation project( ':web-client')
+	implementation project( ':reactive-web')
+	implementation 'org.reactivecommons.utils:object-mapper:0.1.0'
+	implementation project( ':r2dbc-postgresql')
+    implementation project(':model')
+    implementation project(':usecase')
+    implementation 'org.springframework.boot:spring-boot-starter'
+    runtimeOnly('org.springframework.boot:spring-boot-devtools')
+    testImplementation 'com.tngtech.archunit:archunit:1.1.0'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webflux'
+}
+
+tasks.register('explodedJar', Copy) {
+    with jar
+    into "${buildDir}/exploded"
+}
+
+jar {
+    // To disable the *-plain.jar
+    enabled = false
+}
+
+bootJar {
+    // Sets output jar name
+    archiveFileName = "${project.getParent().getName()}.${archiveExtension.get()}"
+}
