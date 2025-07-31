@@ -17,7 +17,7 @@ subprojects {
         useJUnitPlatform()
     }
     dependencies {
-		implementation platform('software.amazon.awssdk:bom:2.20.94')
+        implementation platform('software.amazon.awssdk:bom:2.20.94')
         implementation 'io.projectreactor:reactor-core'
         implementation 'io.projectreactor.addons:reactor-extra'
 
@@ -31,7 +31,7 @@ subprojects {
         testCompileOnly  "org.projectlombok:lombok:${lombokVersion}"
         testAnnotationProcessor  "org.projectlombok:lombok:${lombokVersion}"
         implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
-    }
+}
 
     tasks.withType(Test).configureEach {
         if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_13)) {

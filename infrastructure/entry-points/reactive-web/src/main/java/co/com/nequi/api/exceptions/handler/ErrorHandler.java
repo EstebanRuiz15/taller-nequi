@@ -1,8 +1,8 @@
 package co.com.nequi.api.exceptions.handler;
 
 import co.com.nequi.api.exceptions.dto.ErrorResponse;
-import co.com.nequi.usecase.user.exception.UserConflictException;
-import co.com.nequi.usecase.user.exception.UserNotFoundException;
+import co.com.nequi.exception.BusinessException;
+import co.com.nequi.exception.TechnicalException;
 import co.com.nequi.webclient.exception.EmptyResponseException;
 import co.com.nequi.webclient.exception.ExternalServiceException;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -10,7 +10,9 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class ErrorHandler {
 
     private ErrorHandler() {
@@ -20,28 +22,35 @@ public class ErrorHandler {
     public static Mono<ServerResponse> handleError(Throwable e, ServerRequest request) {
         String path = request.path();
         String stackTrace = getStackTrace(e);
-        
-        if (e instanceof UserNotFoundException ex) {
+
+        if (e instanceof TechnicalException ex) {
+            var tm = ex.getTechnicalMessage();
+            log.error("TechnicalException: {} | code: {} | path: {}\n{}", tm.getMessage(), tm.getCode(), path, stackTrace);
             ErrorResponse errorResponse = ErrorResponse.of(
-                ex.getMessage(), 
-                ex.getStatusCode(), 
-                stackTrace, 
+                tm.getMessage(),
+                400,
+                stackTrace,
                 path
             );
-            return ServerResponse.status(ex.getStatusCode()).bodyValue(errorResponse);
+            return ServerResponse.status(400).bodyValue(errorResponse);
         }
-        
-        if (e instanceof UserConflictException ex) {
+
+        if (e instanceof BusinessException ex) {
+            var tm = ex.getTechnicalMessage();
+            log.warn("BusinessException: {} | code: {} | path: {}\n{}", ex.getMessage(), tm.getCode(), path, stackTrace);
             ErrorResponse errorResponse = ErrorResponse.of(
-                ex.getMessage(), 
-                ex.getStatusCode(), 
-                stackTrace, 
+                ex.getMessage(),
+                Integer.parseInt(tm.getCode()),
+                stackTrace,
                 path
             );
-            return ServerResponse.status(ex.getStatusCode()).bodyValue(errorResponse);
+            return ServerResponse.status(422).bodyValue(errorResponse);
         }
-        
+
+       
+
         if (e instanceof EmptyResponseException ex) {
+            log.error("EmptyResponseException: {} | path: {} | status: {}\n{}", ex.getMessage(), path, ex.getStatusCode(), stackTrace);
             ErrorResponse errorResponse = ErrorResponse.of(
                 ex.getMessage(), 
                 ex.getStatusCode(), 
@@ -50,8 +59,9 @@ public class ErrorHandler {
             );
             return ServerResponse.status(ex.getStatusCode()).bodyValue(errorResponse);
         }
-        
+
         if (e instanceof ExternalServiceException ex) {
+            log.error("ExternalServiceException: {} | path: {} | status: {}\n{}", ex.getMessage(), path, ex.getStatusCode(), stackTrace);
             ErrorResponse errorResponse = ErrorResponse.of(
                 ex.getMessage(), 
                 ex.getStatusCode(), 
@@ -60,7 +70,8 @@ public class ErrorHandler {
             );
             return ServerResponse.status(ex.getStatusCode()).bodyValue(errorResponse);
         }
-        
+
+        log.error("Unhandled exception: {} | path: {}\n{}", e.getMessage(), path, stackTrace);
         ErrorResponse errorResponse = ErrorResponse.of(
             e.getMessage() != null ? e.getMessage() : "Error interno del servidor", 
             500, 

@@ -10,12 +10,8 @@ public interface UserCacheGateway {
     Mono<User> getUserFromCache(Integer id);
     
     Mono<User> saveUserToCache(Integer id, User user);
-    
-    Mono<User> saveUserToCache(Integer id, User user, long expirationMillis);
-    
+
     Mono<List<User>> getUsersByNameFromCache(String name);
     
     Mono<List<User>> saveUsersByNameToCache(String name, List<User> users);
-    
-    Mono<List<User>> saveUsersByNameToCache(String name, List<User> users, long expirationMillis);
 }

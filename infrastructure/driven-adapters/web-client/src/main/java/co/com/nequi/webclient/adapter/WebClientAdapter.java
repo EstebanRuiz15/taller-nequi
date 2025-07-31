@@ -35,7 +35,7 @@ public class WebClientAdapter implements UserWebClientGateway {
                             return Mono.error(new EmptyResponseException("El usuario no existe", 404));
                         }
                         return clientResponse.bodyToMono(String.class)
-                                .flatMap(errorBody -> Mono.error(new ExternalServiceException("Error en la petición: " + errorBody, clientResponse.rawStatusCode())));
+                                .flatMap(errorBody -> Mono.error(new ExternalServiceException("Error en la petición: " + errorBody, clientResponse.statusCode().value())));
                     })
                 .bodyToMono(UserResponse.class)
                 .doOnNext(response -> log.info("Respuesta cruda del servicio externo: {}", response))

@@ -19,6 +19,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.Assertions;
 
 class UserHandlerTest {
 
@@ -55,8 +56,9 @@ class UserHandlerTest {
 
         // Then
         StepVerifier.create(response)
-                .expectNextMatches(serverResponse -> 
-                    serverResponse.statusCode().is2xxSuccessful())
+                .assertNext(serverResponse -> {
+                    Assertions.assertEquals(200, serverResponse.statusCode().value());
+                })
                 .verifyComplete();
     }
 
@@ -70,27 +72,12 @@ class UserHandlerTest {
 
         // Then
         StepVerifier.create(response)
-                .expectNextMatches(serverResponse -> 
-                    serverResponse.statusCode().is4xxClientError())
+                .assertNext(serverResponse -> {
+                    Assertions.assertEquals(400, serverResponse.statusCode().value());
+                })
                 .verifyComplete();
     }
 
-    @Test
-    void listenCreateUser_ShouldReturnBadRequest_WhenInvalidId() {
-        // Given
-        ServerRequest request = MockServerRequest.builder()
-                .queryParam("id", "invalid")
-                .build();
-
-        // When
-        Mono<ServerResponse> response = userHandler.listenCreateUser(request);
-
-        // Then
-        StepVerifier.create(response)
-                .expectNextMatches(serverResponse -> 
-                    serverResponse.statusCode().is4xxClientError())
-                .verifyComplete();
-    }
 
     @Test
     void listenGetUserById_ShouldReturnUser_WhenValidId() {

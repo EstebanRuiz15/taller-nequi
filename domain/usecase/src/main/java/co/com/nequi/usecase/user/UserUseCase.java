@@ -4,8 +4,9 @@ import co.com.nequi.model.user.gateways.UserRepositoryGateway;
 import co.com.nequi.model.user.gateways.UserEventGateway;
 import co.com.nequi.model.user.gateways.UserWebClientGateway;
 import co.com.nequi.model.user.gateways.UserCacheGateway;
-import co.com.nequi.usecase.user.exception.UserConflictException;
-import co.com.nequi.usecase.user.exception.UserNotFoundException;
+import co.com.nequi.exception.BusinessException;
+import co.com.nequi.exception.TechnicalException;
+import co.com.nequi.enums.TechnicalMessage;
 import lombok.RequiredArgsConstructor;
 import co.com.nequi.model.user.User;
 import reactor.core.publisher.Mono;
@@ -21,7 +22,7 @@ public class UserUseCase {
 
     public Mono<User> createUserById(Integer id) {
         return userRepositoryGateway.getUserById(id)
-            .flatMap(existingUser -> Mono.<User>error(new UserConflictException("El usuario ya existe")))
+            .flatMap(existingUser -> Mono.<User>error(new BusinessException("El usuario ya existe", TechnicalMessage.GENERIC_ERROR)))
             .switchIfEmpty(
                 userWebClientGateway.getUserById(id)
                     .flatMap(user ->
@@ -46,21 +47,16 @@ public class UserUseCase {
                     .doOnNext(user -> System.out.println("📊 [DATABASE] Usuario obtenido de BD: " + user.getFirstName() + " " + user.getLastName()))
                     .flatMap(user -> {
                         // Solo guardar en cache si el usuario existe
-                        if (user != null) {
                             return userCacheGateway.saveUserToCache(id, user)
                                 .doOnSuccess(v -> System.out.println("💾 [CACHE SAVE] Usuario guardado en cache con TTL de 5 minutos"))
                                 .thenReturn(user);
-                        } else {
-                            System.out.println("⚠️ [DATABASE] Usuario null obtenido de BD, no se guardará en cache");
-                            return Mono.empty();
-                        }
                     })
                     .switchIfEmpty(
                         Mono.fromRunnable(() -> System.out.println("❌ [DATABASE] Usuario no encontrado en BD"))
                             .then(Mono.empty())
                     )
             )
-            .switchIfEmpty(Mono.error(new UserNotFoundException("El usuario no existe")));
+            .switchIfEmpty(Mono.error(new BusinessException("El usuario no existe", TechnicalMessage.USER_NOT_FOUND)));
     }
 
     public Flux<User> getAllUsers() {
@@ -72,14 +68,9 @@ public class UserUseCase {
         //Intentar obtener del cache primero
         return userCacheGateway.getUsersByNameFromCache(name)
             .flatMapMany(cachedUsers -> {
-                if (cachedUsers != null && !cachedUsers.isEmpty()) {
                     // Si hay usuarios en cache, retornarlos
                     System.out.println("✅ [CACHE] " + cachedUsers.size() + " usuarios encontrados en cache para nombre: " + name);
                     return Flux.fromIterable(cachedUsers);
-                } else {
-                    // Si cache está vacío, ir a BD
-                    return Flux.empty();
-                }
             })
             .switchIfEmpty(
                 //Si no está en cache, consultar base de datos
@@ -88,18 +79,11 @@ public class UserUseCase {
                     .collectList()
                     .doOnNext(users -> System.out.println("📊 [DATABASE] " + users.size() + " usuarios obtenidos de BD para nombre: " + name))
                     .flatMapMany(users -> {
-                        if (users != null && !users.isEmpty()) {
-                            // guardar en cache si hay usuarios
                             return userCacheGateway.saveUsersByNameToCache(name, users)
                                 .doOnSuccess(v -> System.out.println("💾 [CACHE SAVE] " + users.size() + " usuarios guardados en cache con ttl de 5 minutos"))
                                 .thenMany(Flux.fromIterable(users));
-                        } else {
-                            // Si no hay usuarios, no guardamos nada en cache
-                            System.out.println("❌ [DATABASE] No se encontraron usuarios en BD, no se guardará en cache");
-                            return Flux.empty();
-                        }
                     })
             )
-            .switchIfEmpty(Flux.error(new UserNotFoundException("No se encontraron usuarios con ese nombre")));
+            .switchIfEmpty(Flux.error(new BusinessException("No se encontraron usuarios con ese nombre", TechnicalMessage.USER_NOT_FOUND)));
     }
 }

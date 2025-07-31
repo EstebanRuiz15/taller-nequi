@@ -1,6 +1,7 @@
 package co.com.nequi.sqs.listener;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.sqs.model.Message;
@@ -9,6 +10,7 @@ import java.util.function.Function;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import co.com.nequi.model.user.User;
 
+@Log4j2
 @Service
 @AllArgsConstructor
 public class SQSProcessor implements Function<Message, Mono<Void>> {
@@ -19,12 +21,12 @@ public class SQSProcessor implements Function<Message, Mono<Void>> {
     public Mono<Void> apply(Message message) {
         try {
             User user = objectMapper.readValue(message.body(), User.class);
-            System.out.println("Usuario recibido: id=" + user.getId() + ", email=" + user.getEmail() + ", firstName=" + user.getFirstName() + ", lastName=" + user.getLastName());
+            log.info("Usuario recibido: id={}, email={}, firstName={}, lastName={}", user.getId(), user.getEmail(), user.getFirstName(), user.getLastName());
             return messageListenerUseCase.processMessage(user)
-                .doOnError(error -> System.err.println("Error processing message: " + error.getMessage()))
+                .doOnError(error -> log.error("Error processing message: {}", error.getMessage(), error))
                 .then();
         } catch (Exception e) {
-            System.err.println("Error parseando mensaje: " + e.getMessage());
+            log.error("Error parseando mensaje: {}", e.getMessage(), e);
             return Mono.error(e);
         }
     }

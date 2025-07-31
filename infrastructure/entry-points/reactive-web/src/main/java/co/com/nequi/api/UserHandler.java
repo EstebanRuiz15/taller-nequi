@@ -1,6 +1,8 @@
 package co.com.nequi.api;
 
 import co.com.nequi.api.exceptions.handler.ErrorHandler;
+import co.com.nequi.exception.TechnicalException;
+import co.com.nequi.enums.TechnicalMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -20,86 +22,69 @@ public class UserHandler {
     // POST /users
     public Mono<ServerResponse> listenCreateUser(ServerRequest serverRequest) {
         String idStr = serverRequest.queryParam("id").orElse("");
-        
         if (idStr.trim().isEmpty()) {
-            return ErrorHandler.handleValidationError("El id es requerido", serverRequest);
+            return ErrorHandler.handleError(new TechnicalException(TechnicalMessage.INVALID_PARAMETER), serverRequest);
         }
-        
+        Integer id;
         try {
-            Integer id = Integer.valueOf(idStr.trim());
-            
-            if (id <= 0) {
-                return ErrorHandler.handleValidationError("El id debe ser un número positivo", serverRequest);
-            }
-            
-            return userUseCase.createUserById(id)
-                .flatMap(user -> ServerResponse.ok().bodyValue(user))
-                .onErrorResume(e -> {
-                    log.error("Error en createUserById: {}", e.getMessage(), e);
-                    return ErrorHandler.handleError(e, serverRequest);
-                });
+            id = Integer.valueOf(idStr.trim());
         } catch (NumberFormatException e) {
             log.error("Id no numérico en createUserById: {}", idStr);
-            return ErrorHandler.handleValidationError("El id debe ser un número válido", serverRequest);
+            return ErrorHandler.handleError(new TechnicalException(TechnicalMessage.INVALID_PARAMETER), serverRequest);
         }
+        if (id <= 0) {
+            return ErrorHandler.handleError(new TechnicalException(TechnicalMessage.INVALID_PARAMETER), serverRequest);
+        }
+        return userUseCase.createUserById(id)
+            .flatMap(user -> ServerResponse.ok().bodyValue(user))
+            .doOnError(e -> log.error("Error en createUserById", e))
+            .onErrorResume(e -> ErrorHandler.handleError(e, serverRequest));
     }
 
     public Mono<ServerResponse> listenGetUserById(ServerRequest serverRequest) {
+        String idStr = serverRequest.pathVariable("id");
+        if (idStr.trim().isEmpty()) {
+            return ErrorHandler.handleError(new TechnicalException(TechnicalMessage.INVALID_PARAMETER), serverRequest);
+        }
+        Integer id;
         try {
-            String idStr = serverRequest.pathVariable("id");
-            
-            if (idStr.trim().isEmpty()) {
-                return ErrorHandler.handleValidationError("El id es requerido", serverRequest);
-            }
-            
-            Integer id = Integer.valueOf(idStr.trim());
-            
-            if (id <= 0) {
-                return ErrorHandler.handleValidationError("El id debe ser un número positivo", serverRequest);
-            }
-            
-            return userUseCase.getUserById(id)
-                .flatMap(user -> ServerResponse.ok().bodyValue(user))
-                .onErrorResume(e -> {
-                    log.error("Error en getUserById: {}", e.getMessage(), e);
-                    return ErrorHandler.handleError(e, serverRequest);
-                });
+            id = Integer.valueOf(idStr.trim());
         } catch (NumberFormatException e) {
             log.error("Id no numérico en getUserById: {}", e.getMessage());
-            return ErrorHandler.handleValidationError("El id debe ser un número válido", serverRequest);
-        } catch (Exception e) {
-            log.error("Error obteniendo path variable id: {}", e.getMessage());
-            return ErrorHandler.handleValidationError("El id es requerido", serverRequest);
+            return ErrorHandler.handleError(new TechnicalException(TechnicalMessage.INVALID_PARAMETER), serverRequest);
         }
+        if (id <= 0) {
+            return ErrorHandler.handleError(new TechnicalException(TechnicalMessage.INVALID_PARAMETER), serverRequest);
+        }
+        return userUseCase.getUserById(id)
+            .flatMap(user -> ServerResponse.ok().bodyValue(user))
+           .doOnError(e -> log.error("Error en getUserById", e))
+            .onErrorResume(e -> ErrorHandler.handleError(e, serverRequest));
     }
 
     public Mono<ServerResponse> listenGetAllUsers(ServerRequest serverRequest) {
         return userUseCase.getAllUsers()
             .collectList()
             .flatMap(users -> ServerResponse.ok().bodyValue(users))
-            .onErrorResume(e -> {
-                log.error("Error en getAllUsers: {}", e.getMessage(), e);
-                return ErrorHandler.handleError(e, serverRequest);
-            });
+            .doOnError(e -> log.error("Error en getAllUsers", e))
+            .onErrorResume(e -> ErrorHandler.handleError(e, serverRequest));
     }
 
     public Mono<ServerResponse> listenGetUsersByName(ServerRequest serverRequest) {
         String name = serverRequest.queryParam("name").orElse("");
         
         if (name.trim().isEmpty()) {
-            return ErrorHandler.handleValidationError("El nombre es requerido", serverRequest);
+            return ErrorHandler.handleError(new TechnicalException(TechnicalMessage.INVALID_PARAMETER), serverRequest);
         }
-        
+
         if (name.trim().length() < 2) {
-            return ErrorHandler.handleValidationError("El nombre debe tener al menos 2 caracteres", serverRequest);
+            return ErrorHandler.handleError(new TechnicalException(TechnicalMessage.INVALID_PARAMETER), serverRequest);
         }
         
         return userUseCase.getUsersByName(name.trim())
             .collectList()
             .flatMap(users -> ServerResponse.ok().bodyValue(users))
-            .onErrorResume(e -> {
-                log.error("Error en getUsersByName: {}", e.getMessage(), e);
-                return ErrorHandler.handleError(e, serverRequest);
-            });
+            .doOnError(e -> log.error("Error en getUsersByName", e))
+            .onErrorResume(e -> ErrorHandler.handleError(e, serverRequest));
     }
 }

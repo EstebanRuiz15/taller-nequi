@@ -41,14 +41,10 @@ public class UserCacheAdapter implements UserCacheGateway {
     
     @Override
     public Mono<User> saveUserToCache(Integer id, User user) {
-        return saveUserToCache(id, user, DEFAULT_EXPIRATION_MS);
-    }
-    
-    @Override
-    public Mono<User> saveUserToCache(Integer id, User user, long expirationMillis) {
         String key = USER_CACHE_PREFIX + id;
-        return redisTemplate.save(key, user, expirationMillis);
+        return redisTemplate.save(key, user, DEFAULT_EXPIRATION_MS);
     }
+
     
     @Override
     public Mono<List<User>> getUsersByNameFromCache(String name) {
@@ -66,24 +62,20 @@ public class UserCacheAdapter implements UserCacheGateway {
     
     @Override
     public Mono<List<User>> saveUsersByNameToCache(String name, List<User> users) {
-        return saveUsersByNameToCache(name, users, DEFAULT_EXPIRATION_MS);
-    }
-    
-    @Override
-    public Mono<List<User>> saveUsersByNameToCache(String name, List<User> users, long expirationMillis) {
         String key = USER_NAME_CACHE_PREFIX + name.toLowerCase();
-        
+
         return Mono.fromCallable(() -> {
-                try {
-                    return objectMapper.writeValueAsString(users);
-                } catch (Exception e) {
-                    throw new CacheException("Error serializando usuarios para cache", e, 500);
-                }
-            })
-            .flatMap(json -> 
-                stringRedisTemplate.opsForValue().set(key, json)
-                    .then(stringRedisTemplate.expire(key, Duration.ofMillis(expirationMillis)))
-                    .thenReturn(users)
-            );
+                    try {
+                        return objectMapper.writeValueAsString(users);
+                    } catch (Exception e) {
+                        throw new CacheException("Error serializando usuarios para cache", e, 500);
+                    }
+                })
+                .flatMap(json ->
+                        stringRedisTemplate.opsForValue().set(key, json)
+                                .then(stringRedisTemplate.expire(key, Duration.ofMillis(DEFAULT_EXPIRATION_MS)))
+                                .thenReturn(users)
+                );
     }
+
 }
